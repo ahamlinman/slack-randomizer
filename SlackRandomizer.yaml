@@ -1,8 +1,10 @@
 Description: An API for a "randomizer" slash command in Slack
+
 Parameters:
   SlackToken:
     Description: The token sent by Slack to authenticate itself (from the slash command settings)
     Type: String
+
 Resources:
   RestApi:
     Type: AWS::ApiGateway::RestApi
