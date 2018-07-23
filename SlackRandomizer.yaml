@@ -68,7 +68,7 @@ Resources:
       - GetMethod
     Properties:
       RestApiId: {Ref: RestApi}
-      StageName: production
+      StageName: default
 
   LambdaRole:
     Type: AWS::IAM::Role
