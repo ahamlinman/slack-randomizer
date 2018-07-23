@@ -155,5 +155,5 @@ Outputs:
     Value:
       'Fn::Join': [
         '',
-        ['https://', {Ref: ApiDeployment}, '.execute-api.', {Ref: 'AWS::Region'}, '.amazonaws.com/default']
+        ['https://', {Ref: RestApi}, '.execute-api.', {Ref: 'AWS::Region'}, '.amazonaws.com/default']
       ]
