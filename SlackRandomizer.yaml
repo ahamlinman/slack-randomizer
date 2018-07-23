@@ -148,3 +148,12 @@ Resources:
               'response_type': 'in_channel',
               'text': 'I choose… *{}*'.format(choice)
             }
+
+Outputs:
+  ApiUrl:
+    Description: The URL to paste into a Slack slash command integration in GET mode
+    Value:
+      'Fn::Join': [
+        '',
+        ['https://', {Ref: ApiDeployment}, '.execute-api.', {Ref: 'AWS::Region'}, '.amazonaws.com/default']
+      ]
