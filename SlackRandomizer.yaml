@@ -119,6 +119,7 @@ Resources:
   LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
+      Description: API Gateway backend for a "randomizer" slash command in Slack
       Role: {'Fn::GetAtt': [LambdaRole, Arn]}
       Environment:
         Variables:
