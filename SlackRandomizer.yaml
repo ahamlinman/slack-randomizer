@@ -4,6 +4,19 @@ Parameters:
   SlackToken:
     Description: The token sent by Slack to authenticate itself (from the slash command settings)
     Type: String
+    NoEcho: true
+  ThrottleRate:
+    Description: The requests per second rate for API Gateway throttling
+    Type: Number
+    Default: '25'
+  ThrottleBurst:
+    Description: The burst amount for API Gateway throttling
+    Type: Number
+    Default: '100'
+  ApiStageName:
+    Description: The name of the API's deployed stage (the path segment in the API URL)
+    Type: String
+    Default: default
 
 Resources:
   RestApi:
@@ -70,7 +83,10 @@ Resources:
       - GetMethod
     Properties:
       RestApiId: {Ref: RestApi}
-      StageName: default
+      StageName: {Ref: ApiStageName}
+      StageDescription:
+        ThrottlingRateLimit: {Ref: ThrottleRate}
+        ThrottlingBurstLimit: {Ref: ThrottleBurst}
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -155,5 +171,5 @@ Outputs:
     Value:
       'Fn::Join': [
         '',
-        ['https://', {Ref: RestApi}, '.execute-api.', {Ref: 'AWS::Region'}, '.amazonaws.com/default']
+        ['https://', {Ref: RestApi}, '.execute-api.', {Ref: 'AWS::Region'}, '.amazonaws.com/', {Ref: ApiStageName}]
       ]
