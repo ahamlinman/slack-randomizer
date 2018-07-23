@@ -9,7 +9,8 @@ Resources:
   RestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: SlackRandomizer
+      Name: Slack Randomizer
+      Description: API for a "randomizer" slash command in Slack
 
   GetMethod:
     Type: AWS::ApiGateway::Method
