@@ -1,0 +1,126 @@
+Description: An API for a "randomizer" slash command in Slack
+Parameters:
+  SlackToken:
+    Description: The token sent by Slack to authenticate itself (from the slash command settings)
+    Type: String
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: SlackRandomizer
+
+  GetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: {Ref: RestApi}
+      ResourceId:
+        'Fn::GetAtt': [RestApi, RootResourceId]
+      HttpMethod: GET
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.querystring.token: true
+        method.request.querystring.text: false
+        method.request.querystring.ssl_check: false
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri:
+          'Fn::Join': [
+            '',
+            ['arn:aws:apigateway:', {Ref: 'AWS::Region'}, ':lambda:path/2015-03-31/functions/', {'Fn::GetAtt': [LambdaFunction, Arn]}, '/invocations']
+          ]
+        RequestTemplates:
+          application/json: |-
+            {
+              "token": "$input.params('token')",
+              "text": "$input.params('text')",
+              "ssl_check": "$input.params('ssl_check')"
+            }
+        PassthroughBehavior: NEVER
+        IntegrationResponses:
+          - StatusCode: '200'
+          - SelectionPattern: '.*incorrect token.*'
+            StatusCode: '403'
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseModels:
+            application/json: {Ref: SlackResponseModel}
+        - StatusCode: '403'
+
+  SlackResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: {Ref: RestApi}
+      Description: A response for Slack's slash command integration
+      ContentType: application/json
+      Schema:
+        title: Slack Response
+        type: object
+        properties:
+          response_type:
+            type: string
+          text:
+            type: string
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetMethod
+    Properties:
+      RestApiId: {Ref: RestApi}
+      StageName: production
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudwatchPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role:
+        'Fn::GetAtt': [LambdaRole, Arn]
+      Environment:
+        Variables:
+          SLACK_TOKEN: {Ref: SlackToken}
+      Runtime: python3.6
+      Handler: index.lambda_handler
+      Code:
+        ZipFile: |-
+          import os
+          import random
+
+          def lambda_handler(event, context):
+            # really crappy comparison for really limited protection
+            if event['token'] != os.getenv('SLACK_TOKEN'):
+              raise Exception('incorrect token')
+
+            if event['ssl_check']:
+              return None
+
+            options = event['text'].split()
+            if len(options) < 2:
+              return { 'text': 'Hey, I need things to randomize!' }
+
+            choice = random.choice(options)
+            return {
+              'response_type': 'in_channel',
+              'text': 'I choose… *{}*'.format(choice)
+            }
