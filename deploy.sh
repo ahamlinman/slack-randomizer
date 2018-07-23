@@ -56,6 +56,8 @@ while getopts ":hn:t:" opt; do
 done
 shift $((OPTIND -1))
 
+STACK_NAME="${STACK_NAME:-SlackRandomizer}"
+
 if [ -z ${SLACK_TOKEN+x} ]; then
   PARAM_FLAGS=()
 else
@@ -64,9 +66,18 @@ fi
 
 cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null
 
+(
 set -x
-exec aws cloudformation deploy \
+aws cloudformation deploy \
   --template-file SlackRandomizer.yaml \
-  --stack-name "${STACK_NAME:-SlackRandomizer}" \
+  --stack-name "$STACK_NAME" \
   --capabilities CAPABILITY_IAM \
+  --no-fail-on-empty-changeset \
   "${PARAM_FLAGS[@]}"
+)
+
+echo -e "\\nThe Slack webhook is available at the following URL:"
+aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --output text \
+  --query 'Stacks[0].Outputs[0].OutputValue'
