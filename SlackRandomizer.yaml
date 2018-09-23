@@ -28,8 +28,8 @@ Resources:
   GetMethod:
     Type: AWS::ApiGateway::Method
     Properties:
-      RestApiId: {Ref: RestApi}
-      ResourceId: {'Fn::GetAtt': [RestApi, RootResourceId]}
+      RestApiId: !Ref RestApi
+      ResourceId: !GetAtt RestApi.RootResourceId
       HttpMethod: GET
       AuthorizationType: NONE
       RequestParameters:
@@ -59,13 +59,13 @@ Resources:
       MethodResponses:
         - StatusCode: '200'
           ResponseModels:
-            application/json: {Ref: SlackResponseModel}
+            application/json: !Ref SlackResponseModel
         - StatusCode: '403'
 
   SlackResponseModel:
     Type: AWS::ApiGateway::Model
     Properties:
-      RestApiId: {Ref: RestApi}
+      RestApiId: !Ref RestApi
       Description: A response for Slack's slash command integration
       ContentType: application/json
       Schema:
@@ -82,11 +82,11 @@ Resources:
     DependsOn:
       - GetMethod
     Properties:
-      RestApiId: {Ref: RestApi}
-      StageName: {Ref: ApiStageName}
+      RestApiId: !Ref RestApi
+      StageName: !Ref ApiStageName
       StageDescription:
-        ThrottlingRateLimit: {Ref: ThrottleRate}
-        ThrottlingBurstLimit: {Ref: ThrottleBurst}
+        ThrottlingRateLimit: !Ref ThrottleRate
+        ThrottlingBurstLimit: !Ref ThrottleBurst
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -123,7 +123,7 @@ Resources:
   LambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: {'Fn::GetAtt': [LambdaFunction, Arn]}
+      FunctionName: !GetAtt LambdaFunction.Arn
       Principal: apigateway.amazonaws.com
       Action: lambda:invokeFunction
       SourceArn:
@@ -136,10 +136,10 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: API Gateway backend for a "randomizer" slash command in Slack
-      Role: {'Fn::GetAtt': [LambdaRole, Arn]}
+      Role: !GetAtt LambdaRole.Arn
       Environment:
         Variables:
-          SLACK_TOKEN: {Ref: SlackToken}
+          SLACK_TOKEN: !Ref SlackToken
       Runtime: python3.6
       Handler: index.lambda_handler
       Code:
@@ -168,8 +168,4 @@ Resources:
 Outputs:
   ApiUrl:
     Description: The URL to paste into a Slack slash command integration in GET mode
-    Value:
-      'Fn::Join': [
-        '',
-        ['https://', {Ref: RestApi}, '.execute-api.', {Ref: 'AWS::Region'}, '.amazonaws.com/', {Ref: ApiStageName}]
-      ]
+    Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}'
